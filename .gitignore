@@ -9,7 +9,6 @@ resume
 .DS_Store
 
 # Ignore dataset and model files
-*.csv
 *.json
 *.pkl
 *.h5
