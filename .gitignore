@@ -1,0 +1,19 @@
+# Ignore Python cache and virtual env
+__pycache__/
+*.pyc
+.venv/
+env/
+resume
+
+# Ignore system files
+.DS_Store
+
+# Ignore dataset and model files
+*.csv
+*.json
+*.pkl
+*.h5
+
+# Ignore IDE/project files
+.vscode/
+.idea/
