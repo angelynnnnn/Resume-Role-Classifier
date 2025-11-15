@@ -4,7 +4,6 @@ import torch
 import torch.nn.functional as F
 import numpy as np
 import pickle
-
 from transformers import BertForSequenceClassification, BertTokenizer
 
 # -------------------------
@@ -40,10 +39,48 @@ def extract_text_from_pdf(file):
 # -------------------------
 # Simple Preprocessing
 # -------------------------
+
+import re
+import spacy
+
+nlp = spacy.load("en_core_web_sm")
+
 def preprocess(text):
-    import re
-    text = re.sub(r"\s+", " ", text)
-    return text.strip()
+
+    # Step 1: lowercase the entire text so spaCy works correctly
+    text = text.lower()
+
+    # Remove email addresses
+    text = re.sub(r'\b[\w\.-]+@[\w\.-]+\.\w+\b', ' ', text)
+
+    # Remove URLs
+    text = re.sub(r'http\S+|www\.\S+', ' ', text)
+
+    # Remove phone numbers (all formats)
+    text = re.sub(r'\+?\d[\d\-\s\(\)]{6,}\d', ' ', text)
+
+    # Remove punctuation
+    text = re.sub(r"[!\"#$%&'()*+,-./:;<=>?@[\]^_`{|}~]", ' ', text)
+
+    # Remove non-ASCII chars
+    text = re.sub(r'[^\x00-\x7F]+', ' ', text)
+
+    # Remove numbers except 4-digit years
+    text = re.sub(r'\b(?!\d{4}\b)\d+\b', ' ', text)
+
+    # Normalize whitespace
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    # Remove PERSON names using spaCy (now more accurate because lowercase)
+    doc = nlp(text)
+    for ent in doc.ents:
+        if ent.label_ == "PERSON":
+            text = text.replace(ent.text, ' ')
+
+    # Final cleanup
+    text = re.sub(r'\s+', ' ', text).strip()
+
+    return text
 
 
 # -------------------------
@@ -100,11 +137,11 @@ def cosine_similarity(a, b):
 # -------------------------
 # Streamlit UI
 # -------------------------
-st.title("📄 Resume Classification & Similarity Checker (Fine-Tuned BERT)")
+st.title("📄 Resume Classification & Suitability Checker")
 st.write("Upload a resume and optionally paste a job description to analyze alignment.")
 
 resume_file = st.file_uploader("Upload Resume (PDF)", type=["pdf"])
-jd_text = st.text_area("Paste Job Description (optional):")
+jd_text = st.text_area("Paste Job Description of interested role (optional):")
 
 if resume_file:
     # Extract and preprocess
